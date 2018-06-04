@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+
+
+  <select id="boardList" parameterType="java.lang.String" resultType="BoardVo">
+	  select * from board where category_seq=#{tBoard} and BOARD_DEL_YN = 'n' order by category_seq
+  </select>
+  
+   <select id="boardDetail" parameterType="java.util.Map" resultType="BoardVo">
+	select * from board where category_seq=#{tBoard} and board_seq=#{board_seq}
+  </select>
+  
+  <select id="tBoard" resultType="BoardPageVo">
+	select * from boardpage order by 1
+  </select>
+  
+  <select id="findBoardSeq" resultType="java.lang.Integer">
+	select max(board_seq) from board
+  </select>
+  
+  <insert id="boardInsert" parameterType="BoardVo">
+  	insert into board (board_seq , CATEGORY_SEQ, pboard_seq, board_group_seq, board_title, board_content, board_reg_dt, board_del_yn, board_mem_id)
+  	values(board_seq.nextval, #{category_seq}, #{pboard_seq} , #{board_group_seq}, #{board_title}, #{board_content}, sysdate, 'n', #{board_mem_id})
+  
+  </insert>
+  
+   <select id="getFilename" parameterType="java.lang.String" resultType="java.lang.String">
+	select file_path from fileadd where file_board_seq=#{board_seq} order by file_seq
+  </select>
+  
+  <insert id="insertFile" parameterType="java.util.Map">
+  	insert into fileadd (file_seq, file_board_seq, file_path) values(file_seq.nextval,#{board_seq},#{file_path})
+  </insert>
+  <update id="boardDelete">
+  	update board set  BOARD_DEL_YN='y' where board_seq=#{board_seq}
+  </update>
+  
+  
+  <select id="getUserTotalCnt" parameterType="java.lang.String" resultType="java.lang.Integer" >
+    
+    select count(*) 
+	from board
+	where CATEGORY_SEQ=#{tBoard}
+    
+  </select>
+  
+  
+  <select id="getBoardPageList" resultType="BoardVo" parameterType="map">
+	select * from(
+	    select lpad('>',(level-1)*4) || board_title "board_title", rownum rn , board_seq, CATEGORY_SEQ, board_reg_dt, BOARD_DEL_YN, BOARD_MEM_ID, PBOARD_SEQ, BOARD_GROUP_SEQ 
+	    from board
+       	where category_seq=#{tBoard}
+	    start with pboard_seq is null
+	    connect by prior board_seq = pboard_seq
+	    order siblings by board_group_seq desc , BOARD_REG_DT desc
+	)where rn between (#{page}-1)*#{pageSize}+1 and #{page}*#{pageSize} order by rn
+  </select>
+  
+  <update id="tBoardDelete" parameterType="java.lang.String">
+  	update BOARDPAGE set  del_yn='y' where bp_seq=#{tBoard}
+  </update>
+  
+  <update id="tBoardUpdate" parameterType="java.lang.String">
+  	update BOARDPAGE set  del_yn='n' where bp_seq=#{tBoard}
+  </update>
+	<insert id="tBoardInsert" parameterType="java.lang.String">
+		insert into BOARDPAGE values(BOARD_P_SEQ.nextval, #{name}, sysdate, 'n')
+	</insert>
+	
+	<insert id="addComments" parameterType="CommentsVo">
+		insert into COMMENTS values(cmt_seq.nextval, #{cmt_board_seq},#{cmt_mem_id},#{cmt_content}, sysdate, 'n')
+	</insert>
+	
+	<select id="readComments" parameterType="java.lang.String" resultType="CommentsVo">
+		select * from COMMENTS where CMT_BOARD_SEQ=#{board_seq} order by CMT_SEQ
+  	</select>
+  
+  
+  
+</mapper>
